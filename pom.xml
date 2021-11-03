@@ -449,36 +449,43 @@
 
     <dependencyManagement>
         <dependencies>
+            <!--客户端。包含producer端和consumer端，发送消息和接受消息的过程，API-->
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>rocketmq-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <!-- 对consumer和producer来说是服务端，接受producer发来的消息并存储，同时consumer来这里拉取消息-->
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>rocketmq-broker</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <!--通用的常量枚举、基类方法或数据结构，按描述的目标来分包，通俗易懂，包名有：admin、consumer、filter、hook、message等-->
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>rocketmq-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <!--存储服务。消息存储、索引存储、commitLog存储-->
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>rocketmq-store</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <!--类似SOA服务的注册中心，这里保存着消息的TopicName，队列等运行时的meta信息，一般系统分dataNode和nameNode，这里是nameNode。-->
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>rocketmq-namesrv</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <!--命令行工具-->
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>rocketmq-tools</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <!--用netty写的客户端和服务端，fastjson做的序列化。自定义二进制协议-->
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>rocketmq-remoting</artifactId>
@@ -494,11 +501,13 @@
                 <artifactId>rocketmq-test</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <!--只有一个ServerUtil类 只提供Server程序依赖，目的是为了拆解客户端依赖，尽可能减少客户端依赖-->
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>rocketmq-srvutil</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <!-- 消息过滤器server，现在rocketmq的wiki上有示例代码及说明-->
             <dependency>
                 <groupId>org.apache.rocketmq</groupId>
                 <artifactId>rocketmq-filter</artifactId>

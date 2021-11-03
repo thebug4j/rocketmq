@@ -74,16 +74,15 @@ public class NamesrvController {
     }
 
     public boolean initialize() {
-
+        //todo 读取加载kv配置 @3
         this.kvConfigManager.load();
-
+        //todo 使用nettyServerConfig配置初始化netty @4
         this.remotingServer = new NettyRemotingServer(this.nettyServerConfig, this.brokerHousekeepingService);
-
-        this.remotingExecutor =
-            Executors.newFixedThreadPool(nettyServerConfig.getServerWorkerThreads(), new ThreadFactoryImpl("RemotingExecutorThread_"));
-
+        //todo 使用nettyServerConfig配置创建固定大小线程池，线程池名称RemotingExecutorThread_开头
+        this.remotingExecutor = Executors.newFixedThreadPool(nettyServerConfig.getServerWorkerThreads(), new ThreadFactoryImpl("RemotingExecutorThread_"));
+        //todo 将 DefaultRequestProcessor 与 remotingExecutor做绑定，即使用remotingExecutor做Netty事件处理线程池 @5
         this.registerProcessor();
-
+        //todo 开启一个定时器，每隔10s周期扫描无效的broker，并清除broker相关路由配置信息 @6
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -91,7 +90,7 @@ public class NamesrvController {
                 NamesrvController.this.routeInfoManager.scanNotActiveBroker();
             }
         }, 5, 10, TimeUnit.SECONDS);
-
+        //todo 开启一个定时器，每隔10s周期打印输出kvConfig信息 @7
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -141,6 +140,10 @@ public class NamesrvController {
         return true;
     }
 
+    /**
+     * todo 什么是默认事件
+     * 就是Producer，Broker与NameServer的交互事件，如Broker注册，Topic删除等事件，处理默认事件的代码逻辑在DefaultRequestProcessor中
+     */
     private void registerProcessor() {
         if (namesrvConfig.isClusterTest()) {
 

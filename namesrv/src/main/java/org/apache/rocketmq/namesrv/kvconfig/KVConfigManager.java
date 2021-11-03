@@ -41,6 +41,11 @@ public class KVConfigManager {
         this.namesrvController = namesrvController;
     }
 
+    /**
+     * todo kvConfig加载
+     *  nameServer中相关配置信息存储，均采用线程不安全的HashMap容器存储，结合读写锁ReadWriteLock最大化并发度，
+     *  KvConfig就是一个典型的例子，后续路由信息的存储也是同理，
+     */
     public void load() {
         String content = null;
         try {

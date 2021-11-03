@@ -54,6 +54,7 @@ public class NamesrvStartup {
     public static NamesrvController main0(String[] args) {
 
         try {
+            //todo 加载配置文件，指定默认监听端口9876
             NamesrvController controller = createNamesrvController(args);
             start(controller);
             String tip = "The Name Server boot success. serializeType=" + RemotingCommand.getSerializeTypeConfigInThisServer();
@@ -69,6 +70,7 @@ public class NamesrvStartup {
     }
 
     public static NamesrvController createNamesrvController(String[] args) throws IOException, JoranException {
+        //todo 设置mq版本到系统属性rocketmq.remoting.version中
         System.setProperty(RemotingCommand.REMOTING_VERSION_KEY, Integer.toString(MQVersion.CURRENT_VERSION));
         //PackageConflictDetect.detectFastjson();
 
@@ -79,9 +81,13 @@ public class NamesrvStartup {
             return null;
         }
 
+        //todo 初始化NamesrvConfig，主要包括kvConfig路径，mq路径等
         final NamesrvConfig namesrvConfig = new NamesrvConfig();
+        //todo 初始化NettyServerConfig，主要包括 Netty Server相关配置
         final NettyServerConfig nettyServerConfig = new NettyServerConfig();
+        //todo 设置默认监听端口 9876
         nettyServerConfig.setListenPort(9876);
+        //todo 若通过-c 命令指定配置文件路径，则读取路径配置文件
         if (commandLine.hasOption('c')) {
             String file = commandLine.getOptionValue('c');
             if (file != null) {
@@ -97,7 +103,7 @@ public class NamesrvStartup {
                 in.close();
             }
         }
-
+        //todo 若有 -p 命令，则打印所有配置信息
         if (commandLine.hasOption('p')) {
             InternalLogger console = InternalLoggerFactory.getLogger(LoggerName.NAMESRV_CONSOLE_NAME);
             MixAll.printObjectProperties(console, namesrvConfig);
@@ -111,7 +117,7 @@ public class NamesrvStartup {
             System.out.printf("Please set the %s variable in your environment to match the location of the RocketMQ installation%n", MixAll.ROCKETMQ_HOME_ENV);
             System.exit(-2);
         }
-
+        // todo 初始化LogBack配置
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
         JoranConfigurator configurator = new JoranConfigurator();
         configurator.setContext(lc);
@@ -136,13 +142,13 @@ public class NamesrvStartup {
         if (null == controller) {
             throw new IllegalArgumentException("NamesrvController is null");
         }
-
+        //todo 初始化
         boolean initResult = controller.initialize();
         if (!initResult) {
             controller.shutdown();
             System.exit(-3);
         }
-
+        //todo 注册JVM钩子函数，在JVM关闭时优雅的关闭线程及NettyServer
         Runtime.getRuntime().addShutdownHook(new ShutdownHookThread(log, new Callable<Void>() {
             @Override
             public Void call() throws Exception {
@@ -150,7 +156,7 @@ public class NamesrvStartup {
                 return null;
             }
         }));
-
+        //todo 启动nettyServer
         controller.start();
 
         return controller;

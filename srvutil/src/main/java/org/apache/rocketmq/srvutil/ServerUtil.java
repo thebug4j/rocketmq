@@ -51,6 +51,16 @@ public class ServerUtil {
                 hf.printHelp(appName, options, true);
                 System.exit(0);
             }
+            //todo   Apache Commons CLI 是 Apache 下面的一个解析命令行输入的工具包
+            //todo  打印opts的名称和值 [启动时指定 program arguments -n 127.0.0.1]
+            Option[] opts = commandLine.getOptions();
+            if (opts != null) {
+                for (Option opt1 : opts) {
+                    String name = opt1.getLongOpt();
+                    String value = commandLine.getOptionValue(name);
+                    System.out.println(name + "=>" + value);
+                }
+            }
         } catch (ParseException e) {
             hf.printHelp(appName, options, true);
             System.exit(1);

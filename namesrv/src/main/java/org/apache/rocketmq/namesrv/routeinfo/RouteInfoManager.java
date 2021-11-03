@@ -112,8 +112,15 @@ public class RouteInfoManager {
         RegisterBrokerResult result = new RegisterBrokerResult();
         try {
             try {
+                /**
+                 * todo 加写锁,避免并发写 @1
+                 * 因为每台Broker都会向所有NameServer进行注册，所以存在多台Broker同时向一个NameServer注册的情况，加写锁保证数据安全
+                 */
                 this.lock.writeLock().lockInterruptibly();
-
+                /**
+                 * todo 判断对应集群中是否存在该broker，没有则加入 @2
+                 * 维护clusterAddrTable，判断Broker集群中是否有该Broker，没有则加入
+                 */
                 Set<String> brokerNames = this.clusterAddrTable.get(clusterName);
                 if (null == brokerNames) {
                     brokerNames = new HashSet<String>();
@@ -122,7 +129,7 @@ public class RouteInfoManager {
                 brokerNames.add(brokerName);
 
                 boolean registerFirst = false;
-
+                //todo 获取该brokername对应brokerData，没有则新增 @3
                 BrokerData brokerData = this.brokerAddrTable.get(brokerName);
                 if (null == brokerData) {
                     registerFirst = true;
@@ -132,6 +139,7 @@ public class RouteInfoManager {
                 Map<Long, String> brokerAddrsMap = brokerData.getBrokerAddrs();
                 //Switch slave to master: first remove <1, IP:PORT> in namesrv, then add <0, IP:PORT>
                 //The same IP:PORT must only have one record in brokerAddrTable
+                //todo 假设主broker挂了，此时备broker成为主，注册时， brokerid=0，brokeraddr=地址2，故需移除value=当前地址的项 @4
                 Iterator<Entry<Long, String>> it = brokerAddrsMap.entrySet().iterator();
                 while (it.hasNext()) {
                     Entry<Long, String> item = it.next();
@@ -145,6 +153,7 @@ public class RouteInfoManager {
 
                 if (null != topicConfigWrapper
                     && MixAll.MASTER_ID == brokerId) {
+                    //todo 当前注册的是主broker，且broker中topic配置信息有变化，或者是第一次注册，则更新topic对应的queueData @5
                     if (this.isBrokerTopicConfigChanged(brokerAddr, topicConfigWrapper.getDataVersion())
                         || registerFirst) {
                         ConcurrentMap<String, TopicConfig> tcTable =
@@ -156,7 +165,7 @@ public class RouteInfoManager {
                         }
                     }
                 }
-
+                //todo 维护broker心跳检测对象，使用当前时间做 lastUpdateTimestamp @6
                 BrokerLiveInfo prevBrokerLiveInfo = this.brokerLiveTable.put(brokerAddr,
                     new BrokerLiveInfo(
                         System.currentTimeMillis(),
@@ -174,7 +183,7 @@ public class RouteInfoManager {
                         this.filterServerTable.put(brokerAddr, filterServerList);
                     }
                 }
-
+                //todo 如果当前broker不是主master，返回master的地址作为HaServer地址 @7
                 if (MixAll.MASTER_ID != brokerId) {
                     String masterAddr = brokerData.getBrokerAddrs().get(MixAll.MASTER_ID);
                     if (masterAddr != null) {
@@ -214,7 +223,7 @@ public class RouteInfoManager {
             prev.setLastUpdateTimestamp(System.currentTimeMillis());
         }
     }
-
+    //todo 对broker中每个默认topic注册其QueueData信息
     private void createAndUpdateQueueData(final String brokerName, final TopicConfig topicConfig) {
         QueueData queueData = new QueueData();
         queueData.setBrokerName(brokerName);
@@ -236,9 +245,11 @@ public class RouteInfoManager {
             while (it.hasNext()) {
                 QueueData qd = it.next();
                 if (qd.getBrokerName().equals(brokerName)) {
+                    //todo 该topic第一次注册，新增
                     if (qd.equals(queueData)) {
                         addNewOne = false;
                     } else {
+                        //todo topic对应的queueData信息更改，先移除QueueData,再新增
                         log.info("topic changed, {} OLD: {} NEW: {}", topicConfig.getTopicName(), qd,
                             queueData);
                         it.remove();
@@ -444,6 +455,7 @@ public class RouteInfoManager {
         while (it.hasNext()) {
             Entry<String, BrokerLiveInfo> next = it.next();
             long last = next.getValue().getLastUpdateTimestamp();
+            //todo 遍历broker存储信息Map,若当前时间>上次心跳时间+120秒，则关闭通道，清除broker信息
             if ((last + BROKER_CHANNEL_EXPIRED_TIME) < System.currentTimeMillis()) {
                 RemotingUtil.closeChannel(next.getValue().getChannel());
                 it.remove();
